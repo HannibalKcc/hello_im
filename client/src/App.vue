@@ -1,28 +1,57 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+      <template v-if="[null, undefined, ''].includes(userType)">
+          <p>请选择您的用户类型</p>
+          <button
+              v-for="(typeItem) in userTypeList" :key="typeItem.type"
+              @click="userType = typeItem.type"
+          >
+              {{typeItem.text}}
+          </button>
+      </template>
+      <Chat
+          v-else
+          :userType="userType"
+      >
+      </Chat>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+    import Chat from './components/Chat.vue';
 
-export default {
-  name: 'App',
-  components: {
-    HelloWorld
-  }
-}
+    export default {
+        name: 'App',
+        components: {
+            Chat,
+        },
+        data() {
+            return {
+                userType: null,
+
+                userTypeList: [
+                    {
+                        type: 'customer',
+                        text: '客户',
+                    },
+                    {
+                        type: 'customerService',
+                        text: '客服',
+                    },
+                ],
+            };
+        }
+    };
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
+    body {
+        margin: 0;
+        padding-bottom: 3rem;
+    }
+</style>
+<style rel="stylesheet/scss" type="text/scss" lang="scss" scoped>
+    #app {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 </style>

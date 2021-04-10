@@ -16,10 +16,12 @@ server.listen(3000, () => {
 // TODO 0-客服登录、结束会话
 // TODO 0-图片上传
 // TODO 99-已读
+// TODO 1-服务端使用 TS
 io.on('connection', (socket) => {
     console.log('a user connected');
-    socket.on('chat message', (msg) => {
-        io.emit('chat message', msg);
+    socket.on('msgFromC', (msgObj) => {
+        // 时间戳在服务端添加
+        io.emit('msgFromS', {...msgObj, time: Date.now(),});
     });
 
     socket.on('disconnect', () => {
