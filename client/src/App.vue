@@ -1,20 +1,20 @@
 <template>
-  <div id="app">
-      <template v-if="[null, undefined, ''].includes(userType)">
-          <p>请选择您的用户类型</p>
-          <button
-              v-for="(typeItem) in userTypeList" :key="typeItem.type"
-              @click="userType = typeItem.type"
-          >
-              {{typeItem.text}}
-          </button>
-      </template>
-      <Chat
-          v-else
-          :userType="userType"
-      >
-      </Chat>
-  </div>
+    <div id="app">
+        <template v-if="[null, undefined, ''].includes(userType)">
+            <p>请选择您的用户类型</p>
+            <button
+                v-for="(typeItem) in userTypeList" :key="typeItem.type"
+                @click="userType = typeItem.type"
+            >
+                {{typeItem.text}}
+            </button>
+        </template>
+        <Chat
+            v-else
+            :userType="userType"
+        >
+        </Chat>
+    </div>
 </template>
 
 <script>
@@ -50,7 +50,7 @@
         padding-bottom: 3rem;
     }
 </style>
-<style rel="stylesheet/scss" type="text/scss" lang="scss" scoped>
+<style scoped>
     #app {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }

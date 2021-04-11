@@ -7,18 +7,31 @@
                 :key="index"
                 :class="getClassByMsgObj(item)"
             >
-                <div class="msg-body">{{item.msg}}</div>
-                <div v-if="item.msgType === 'commonMsg'" class="time-item">
+                <template v-if="['commonMsg', 'systemMsg'].includes(item.msgType)">
+                    <div class="msg-body">{{item.msg}}</div>
+                </template>
+                <template v-else-if="'imgMsg' === item.msgType">
+                    <img :src="item.msg" alt="" class="imgMsg">
+                </template>
+                <div v-if="['commonMsg', 'imgMsg'].includes(item.msgType)" class="time-item">
                     {{dayjs(item.time).format('MM-DD hh:mm:ss')}}
                 </div>
             </li>
         </ul>
-        <form id="form" action="" @submit.prevent="handleSubmit">
-            <input id="input" autocomplete="off" v-model="sendMsg"/>
-            <!--TODO 客户端图片上传-->
-            <input type="file"/>
-            <button class="send-btn">Send</button>
-        </form>
+        <div class="bottom-box">
+            <form id="form" @submit.prevent="handleSubmit">
+                <input id="input" autocomplete="off" v-model="sendMsg"/>
+                <button class="send-btn">Send</button>
+            </form>
+            <form
+                id="formImg"
+                @submit.prevent="handleSubmitImg"
+            >
+                <input name="userType" type="text" v-model="userType" class="hide">
+                <input name="file" type="file"/>
+                <button type="submit">Send File</button>
+            </form>
+        </div>
     </div>
 </template>
 
@@ -59,6 +72,12 @@
                         userType: 'customerService',
                         time: 1618036090103,
                     },
+                    {
+                        msg: 'test.jpg',
+                        msgType: 'imgMsg',
+                        userType: 'customerService',
+                        time: 1618046090103,
+                    },
                 ],
 
                 dayjs,
@@ -66,9 +85,9 @@
         },
         mounted() {
             this.socket = io();
-            this.socket.on('msgFromS', function(msgObj) {
+            this.socket.on('msgFromS', (msgObj) => {
                 this.msgList.push(msgObj);
-                this.$refs.chat.scrollTo(0, this.$refs.chat.scrollHeight);
+                window.scrollTo(0, this.$refs.chat.scrollHeight);
             });
         },
         beforeDestroy() {
@@ -85,12 +104,28 @@
                     this.sendMsg = '';
                 }
             },
+            handleSubmitImg(e) {
+                const formData = new FormData(e.target);
+                this.axios.post(
+                    '/upload-file',
+                    formData,
+                    {headers: {'Content-Type': 'multipart/form-data'}},
+                );
+            },
 
             getClassByMsgObj(msgObj) {
                 const classList = [];
                 if (msgObj.msgType === 'commonMsg') {
                     classList.push('commonMsg');
                     if (msgObj.userType === this.userType) {
+                        classList.push('align-right');
+                    } else {
+                        classList.push('align-left');
+                    }
+                }
+
+                if(msgObj.msgType === 'imgMsg') {
+                     if (msgObj.userType === this.userType) {
                         classList.push('align-right');
                     } else {
                         classList.push('align-left');
@@ -107,48 +142,69 @@
     };
 </script>
 
-<style rel="stylesheet/scss" type="text/scss" lang="scss" scoped>
-    #form {
-        background: rgba(0, 0, 0, 0.15);
-        padding: 0.25rem;
+<style scoped>
+    .bottom-box {
         position: fixed;
         bottom: 0;
         left: 0;
         right: 0;
+    }
+
+    #form {
+        background: rgba(0, 0, 0, 0.15);
+        padding: 0.25rem;
         display: flex;
         height: 3rem;
         box-sizing: border-box;
         backdrop-filter: blur(10px);
-        #input {
-            border: none;
-            padding: 0 1rem;
-            flex-grow: 1;
-            border-radius: 2rem;
-            margin: 0.25rem;
-        }
-        #input:focus {
-            outline: none;
-        }
-        .send-btn {
-            background: #333;
-            border: none;
-            padding: 0 1rem;
-            margin: 0.25rem;
-            border-radius: 3px;
-            outline: none;
-            color: #fff;
-        }
+    }
+
+    #input {
+        border: none;
+        padding: 0 1rem;
+        flex-grow: 1;
+        border-radius: 2rem;
+        margin: 0.25rem;
+    }
+
+    #input:focus {
+        outline: none;
+    }
+
+    .send-btn {
+        background: #333;
+        border: none;
+        padding: 0 1rem;
+        margin: 0.25rem;
+        border-radius: 3px;
+        outline: none;
+        color: #fff;
     }
 
     .msg-list {
         padding: 0;
         margin: 0;
         list-style-type: none;
-        .msg-item {
-            display: flex;
-            flex-direction: column;
-            padding: 0.5rem 1rem;
-        }
+    }
+
+    .msg-item {
+        display: flex;
+        flex-direction: column;
+        padding: 0.5rem 1rem;
+    }
+
+    .commonMsg {
+        font-size: 16px;
+    }
+
+    .systemMsg {
+        font-size: 12px;
+        color: #a5b5c1;
+    }
+
+    .imgMsg {
+        width: 100px;
+        height: 100px;
     }
 
     .align-left {
@@ -163,12 +219,7 @@
         align-items: flex-end;
     }
 
-    .commonMsg {
-        font-size: 16px;
-    }
-
-    .systemMsg {
-        font-size: 12px;
-        color: #a5b5c1;
+    .hide {
+        display: none;
     }
 </style>
