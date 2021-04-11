@@ -7,6 +7,8 @@ const server = http.createServer(app);
 const io = require('socket.io')(server);
 
 const saveFile = require('./src/saveFile.js');
+const fakeAiRespond = require('./src/fakeAiRespond.js');
+const findPortEnable = require('./src/findPortEnable.js');
 
 // 暴露静态文件夹
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -40,16 +42,18 @@ app.post('/upload-file', (req, res, next) => {
     });
 });
 
-// TODO 99-尝试使用其他端口
-server.listen(3000, () => {
-    console.log('listening on *:3000');
-});
-
-// TODO 0-结束会话
-// TODO 99-已读
-// TODO 1-服务端使用 TS
 io.on('connection', (socket) => {
-    console.log('a user connected');
+    // 登入，通知对方
+    socket.broadcast.emit(
+        'msgFromS',
+        {
+            msg: `${socket.handshake.query.userType === 'customer' ? '客户' : '客服'}已在线`,
+            userType: socket.handshake.query.userType,
+            msgType: 'systemMsg',
+            time: Date.now(),
+        },
+    );
+
     socket.on('msgFromC', (msgObj) => {
         io.emit(
             'msgFromS',
@@ -59,9 +63,31 @@ io.on('connection', (socket) => {
                 time: Date.now(),
             },
         );
+        if (msgObj.userType === 'customer') {
+            const aiRes = fakeAiRespond(msgObj.msg);
+            if (!['', null, undefined].includes(aiRes)) {
+                io.emit(
+                    'msgFromS',
+                    {
+                        ...msgObj,
+                        msg: aiRes,
+                        msgType: 'commonMsg',
+                        userType: 'customerService',
+                        // 时间戳在服务端添加
+                        time: Date.now(),
+                    },
+                );
+            }
+        }
     });
 
     socket.on('disconnect', () => {
         console.log('user disconnected');
+    });
+});
+
+findPortEnable(3000).then(port => {
+    server.listen(port, () => {
+        console.log(`listening on *:${port}`);
     });
 });

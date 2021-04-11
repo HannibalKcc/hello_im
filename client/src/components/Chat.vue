@@ -11,7 +11,7 @@
                     <div class="msg-body">{{item.msg}}</div>
                 </template>
                 <template v-else-if="'imgMsg' === item.msgType">
-                    <img :src="item.msg" alt="" class="imgMsg">
+                    <img :src="item.msg" class="imgMsg">
                 </template>
                 <div v-if="['commonMsg', 'imgMsg'].includes(item.msgType)" class="time-item">
                     {{dayjs(item.time).format('MM-DD hh:mm:ss')}}
@@ -19,18 +19,33 @@
             </li>
         </ul>
         <div class="bottom-box">
-            <form id="form" @submit.prevent="handleSubmit">
-                <input id="input" autocomplete="off" v-model="sendMsg"/>
-                <button class="send-btn">Send</button>
-            </form>
-            <form
-                id="formImg"
-                @submit.prevent="handleSubmitImg"
-            >
-                <input name="userType" type="text" v-model="userType" class="hide">
-                <input name="file" type="file"/>
-                <button type="submit">Send File</button>
-            </form>
+            <div v-if="userType  === 'customer'" class="keyword-options">
+                <div>你可以尝试询问：</div>
+                <button
+                    v-for="(item, index) in keywordOptionList" :key="index"
+                    class="keyword-item"
+                    @click="handleSelectKeyword(item)"
+                >
+                    {{item}}
+                </button>
+            </div>
+            <div class="input-body">
+                <form id="form" @submit.prevent="handleSubmit">
+                    <input id="input" autocomplete="off" v-model="sendMsg"/>
+                    <button class="send-btn">Send</button>
+                </form>
+                <button>
+                    <label class="img-input-label" for="img-input">upload img</label>
+                </button>
+                <input
+                    id="img-input"
+                    ref="imgInput"
+                    name="file" type="file"
+                    accept="image/gif,image/jpeg,image/jpg,image/png,image/svg"
+                    class="hide"
+                    @change="handleSubmitImg"
+                />
+            </div>
         </div>
     </div>
 </template>
@@ -46,45 +61,57 @@
                 required: true,
                 validator: (val) => {
                     return ['customer', 'customerService'].includes(val);
-                }
+                },
             },
         },
         data() {
             return {
                 socket: null,
                 sendMsg: '',
-                msgList: [
-                    {
-                        msg: '你好',
-                        msgType: 'commonMsg',
-                        userType: 'customer',
-                        time: 1618036030103,
-                    },
-                    {
-                        msg: '客服已在线',
-                        msgType: 'systemMsg',
-                        userType: 'customerService',
-                        time: 1618036090103,
-                    },
-                    {
-                        msg: '你好，需要什么',
-                        msgType: 'commonMsg',
-                        userType: 'customerService',
-                        time: 1618036090103,
-                    },
-                    {
-                        msg: 'test.jpg',
-                        msgType: 'imgMsg',
-                        userType: 'customerService',
-                        time: 1618046090103,
-                    },
+                msgList: process.env.NODE_ENV === 'development'
+                    ? [
+                        {
+                            msg: '你好',
+                            msgType: 'commonMsg',
+                            userType: 'customer',
+                            time: 1618036030103,
+                        },
+                        {
+                            msg: '客服已在线',
+                            msgType: 'systemMsg',
+                            userType: 'customerService',
+                            time: 1618036090103,
+                        },
+                        {
+                            msg: '你好，需要什么',
+                            msgType: 'commonMsg',
+                            userType: 'customerService',
+                            time: 1618036090103,
+                        },
+                        {
+                            msg: 'test.jpg',
+                            msgType: 'imgMsg',
+                            userType: 'customerService',
+                            time: 1618046090103,
+                        },
+                    ]
+                    : [],
+                keywordOptionList: [
+                    '发货',
+                    '包邮',
+                    '尺寸',
                 ],
+
 
                 dayjs,
             };
         },
         mounted() {
-            this.socket = io();
+            this.socket = io('/', {
+                query: {
+                    userType: this.userType,
+                },
+            });
             this.socket.on('msgFromS', (msgObj) => {
                 this.msgList.push(msgObj);
                 window.scrollTo(0, this.$refs.chat.scrollHeight);
@@ -104,13 +131,27 @@
                     this.sendMsg = '';
                 }
             },
-            handleSubmitImg(e) {
-                const formData = new FormData(e.target);
+            handleSubmitImg() {
+                const formData = new FormData();
+                if (!this.$refs.imgInput.files || !this.$refs.imgInput.files[0]) {
+                    return alert('请先上传图片');
+                }
+                formData.set('userType', this.userType);
+                formData.set('file', this.$refs.imgInput.files[0]);
                 this.axios.post(
                     '/upload-file',
                     formData,
                     {headers: {'Content-Type': 'multipart/form-data'}},
-                );
+                ).then(() => {
+                    this.$refs.imgInput.value = null;
+                });
+            },
+            handleSelectKeyword(keywordItem) {
+                this.socket.emit('msgFromC', {
+                    msg: keywordItem,
+                    msgType: 'commonMsg',
+                    userType: this.userType,
+                });
             },
 
             getClassByMsgObj(msgObj) {
@@ -124,8 +165,8 @@
                     }
                 }
 
-                if(msgObj.msgType === 'imgMsg') {
-                     if (msgObj.userType === this.userType) {
+                if (msgObj.msgType === 'imgMsg') {
+                    if (msgObj.userType === this.userType) {
                         classList.push('align-right');
                     } else {
                         classList.push('align-left');
@@ -137,7 +178,7 @@
                 }
 
                 return classList;
-            }
+            },
         },
     };
 </script>
@@ -150,12 +191,27 @@
         right: 0;
     }
 
-    #form {
-        background: rgba(0, 0, 0, 0.15);
-        padding: 0.25rem;
+    .keyword-options {
         display: flex;
+        padding: 4px 10px;
+        border: 1px solid #efefef;
+    }
+
+    .keyword-item {
+        margin-right: 10px;
+    }
+
+    .input-body {
+        display: flex;
+    }
+
+    #form {
+        flex: 1;
+        padding: 0.25rem;
         height: 3rem;
         box-sizing: border-box;
+        display: flex;
+        background: rgba(0, 0, 0, 0.15);
         backdrop-filter: blur(10px);
     }
 

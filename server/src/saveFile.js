@@ -19,8 +19,8 @@ function saveFile({req}) {
         const busboy = new Busboy({headers: req.headers});
 
         busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
-            // TODO 1-防止随机数冲突
-            let fileName = Math.random().toString(16).substr(2) + path.extname(filename);
+            // 只要并发不超过 1ms/1w 次就不会冲突
+            let fileName = Date.now() + Math.random().toString(16).substr(2, 4) + path.extname(filename);
             let savePath = path.join(__dirname, '..', 'upload-files', fileName);
 
             // 文件保存到指定路径
@@ -37,7 +37,7 @@ function saveFile({req}) {
         busboy.on('field', function(fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetype) {
             console.log('表单字段数据 [' + fieldname + ']: value: ' + inspect(val));
             if ('userType' === fieldname) {
-                result.userType = inspect(val);
+                result.userType = typeof val === 'string' ? val : inspect(val);
             }
         });
 

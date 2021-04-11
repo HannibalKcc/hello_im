@@ -10,8 +10,9 @@ const respondMap = new Map([
 
 function getRespond(inputStr) {
     const reg = new RegExp(`(${[...respondMap.keys()].join('|')})`);
-    if (![undefined, null].includes(inputStr.match(reg)[0])) {
-        return respondMap.get(inputStr.match(reg)[0]);
+    const match = inputStr.match(reg);
+    if (match != null && ![undefined, null].includes(match[0])) {
+        return respondMap.get(match[0]);
     } else {
         return null;
     }

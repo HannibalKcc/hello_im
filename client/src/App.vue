@@ -1,14 +1,15 @@
 <template>
     <div id="app">
-        <template v-if="[null, undefined, ''].includes(userType)">
+        <div v-if="[null, undefined, ''].includes(userType)" class="selectTypeBox p10">
             <p>请选择您的用户类型</p>
             <button
                 v-for="(typeItem) in userTypeList" :key="typeItem.type"
-                @click="userType = typeItem.type"
+                class="selectTypeBtn"
+                @click="handleSelectUserType(typeItem.type)"
             >
                 {{typeItem.text}}
             </button>
-        </template>
+        </div>
         <Chat
             v-else
             :userType="userType"
@@ -40,7 +41,13 @@
                     },
                 ],
             };
-        }
+        },
+        methods: {
+            handleSelectUserType(type) {
+                this.userType = type;
+                document.title = `client-${type}`;
+            },
+        },
     };
 </script>
 
@@ -53,5 +60,13 @@
 <style scoped>
     #app {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .selectTypeBox > .selectTypeBtn:not(:last-child) {
+        margin-right: 10px;
+    }
+
+    .p10 {
+        padding: 10px;
     }
 </style>
