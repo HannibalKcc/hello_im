@@ -9,6 +9,8 @@ const io = require('socket.io')(server);
 const saveFile = require('./src/saveFile.js');
 const fakeAiRespond = require('./src/fakeAiRespond.js');
 const findPortEnable = require('./src/findPortEnable.js');
+const socketWithCache = require('./src/socketWithCache.js').socketWithCache;
+const cacheList = require('./src/socketWithCache.js').cacheList;
 
 // 暴露静态文件夹
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -25,7 +27,8 @@ app.get('/', (req, res) => {
 
 app.post('/upload-file', (req, res, next) => {
     saveFile({req}).then(result => {
-        io.emit(
+        socketWithCache(
+            io,
             'msgFromS',
             {
                 msg: result.fileName,
@@ -43,8 +46,24 @@ app.post('/upload-file', (req, res, next) => {
 });
 
 io.on('connection', (socket) => {
+    console.log('user connected');
+
+    // 发送缓存信息
+    cacheList.forEach(item => {
+        // 不显示自己的上下线信息
+        if (item.msgObj.msgType === 'systemMsg'
+            && item.msgObj.userType === socket.handshake.query.userType) {
+        } else {
+            socket.emit(
+                item.eventName,
+                item.msgObj,
+            );
+        }
+    });
+
     // 登入，通知对方
-    socket.broadcast.emit(
+    socketWithCache(
+        socket.broadcast,
         'msgFromS',
         {
             msg: `${socket.handshake.query.userType === 'customer' ? '客户' : '客服'}已在线`,
@@ -55,7 +74,8 @@ io.on('connection', (socket) => {
     );
 
     socket.on('msgFromC', (msgObj) => {
-        io.emit(
+        socketWithCache(
+            io,
             'msgFromS',
             {
                 ...msgObj,
@@ -63,10 +83,13 @@ io.on('connection', (socket) => {
                 time: Date.now(),
             },
         );
+
+        // 客户端消息关键词回复
         if (msgObj.userType === 'customer') {
             const aiRes = fakeAiRespond(msgObj.msg);
             if (!['', null, undefined].includes(aiRes)) {
-                io.emit(
+                socketWithCache(
+                    io,
                     'msgFromS',
                     {
                         ...msgObj,
@@ -83,6 +106,17 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         console.log('user disconnected');
+
+        socketWithCache(
+            socket.broadcast,
+            'msgFromS',
+            {
+                msg: `${socket.handshake.query.userType === 'customer' ? '客户' : '客服'}已离线`,
+                userType: socket.handshake.query.userType,
+                msgType: 'systemMsg',
+                time: Date.now(),
+            },
+        );
     });
 });
 

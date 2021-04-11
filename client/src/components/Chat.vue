@@ -1,6 +1,6 @@
 <template>
     <div class="Chat" ref="chat">
-        <ul class="msg-list">
+        <ul class="msg-list" :style="fixPaddingBottom">
             <li
                 class="msg-item"
                 v-for="(item, index) in msgList"
@@ -8,7 +8,11 @@
                 :class="getClassByMsgObj(item)"
             >
                 <template v-if="['commonMsg', 'systemMsg'].includes(item.msgType)">
-                    <div class="msg-body">{{item.msg}}</div>
+                    <div
+                        class="msg-body"
+                        :class="{'from-self': item.msgType === 'commonMsg' && item.userType === userType}">
+                        {{item.msg}}
+                    </div>
                 </template>
                 <template v-else-if="'imgMsg' === item.msgType">
                     <img :src="item.msg" class="imgMsg">
@@ -18,8 +22,9 @@
                 </div>
             </li>
         </ul>
-        <div class="bottom-box">
-            <div v-if="userType  === 'customer'" class="keyword-options">
+
+        <div ref="bottomBox" class="bottom-box">
+            <div v-if="userType === 'customer'" class="keyword-options">
                 <div>你可以尝试询问：</div>
                 <button
                     v-for="(item, index) in keywordOptionList" :key="index"
@@ -34,9 +39,7 @@
                     <input id="input" autocomplete="off" v-model="sendMsg"/>
                     <button class="send-btn">Send</button>
                 </form>
-                <button>
-                    <label class="img-input-label" for="img-input">upload img</label>
-                </button>
+                <label class="img-input-label" for="img-input">upload img</label>
                 <input
                     id="img-input"
                     ref="imgInput"
@@ -101,12 +104,14 @@
                     '包邮',
                     '尺寸',
                 ],
-
+                fixPaddingBottom: {},
 
                 dayjs,
             };
         },
         mounted() {
+            this.initFixPaddingBottom();
+
             this.socket = io('/', {
                 query: {
                     userType: this.userType,
@@ -114,7 +119,9 @@
             });
             this.socket.on('msgFromS', (msgObj) => {
                 this.msgList.push(msgObj);
-                window.scrollTo(0, this.$refs.chat.scrollHeight);
+                this.$nextTick(() => {
+                    window.scrollTo(0, this.$refs.chat.scrollHeight);
+                });
             });
         },
         beforeDestroy() {
@@ -179,6 +186,11 @@
 
                 return classList;
             },
+            initFixPaddingBottom() {
+                this.fixPaddingBottom = {
+                    'padding-bottom': this.$refs.bottomBox.offsetHeight + 'px',
+                };
+            },
         },
     };
 </script>
@@ -194,7 +206,8 @@
     .keyword-options {
         display: flex;
         padding: 4px 10px;
-        border: 1px solid #efefef;
+        border: 2px solid #efefef;
+        background: #f5f5f5;
     }
 
     .keyword-item {
@@ -237,6 +250,10 @@
         color: #fff;
     }
 
+    .send-btn:hover {
+        cursor: pointer;
+    }
+
     .msg-list {
         padding: 0;
         margin: 0;
@@ -247,6 +264,17 @@
         display: flex;
         flex-direction: column;
         padding: 0.5rem 1rem;
+    }
+
+    .msg-body {
+        display: inline-block;
+        padding: 10px;
+        border: 1px solid #efefef;
+        border-radius: 10px;
+    }
+
+    .msg-body.from-self {
+        background: #5cadff;
     }
 
     .commonMsg {
@@ -261,6 +289,16 @@
     .imgMsg {
         width: 100px;
         height: 100px;
+    }
+
+    .img-input-label {
+        padding: 10px;
+        border: 1px solid #000;
+        background: #e5e5e5;
+    }
+
+    .img-input-label:hover {
+        cursor: pointer;
     }
 
     .align-left {
