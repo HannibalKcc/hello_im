@@ -287,8 +287,8 @@
     }
 
     .imgMsg {
-        width: 100px;
-        height: 100px;
+        max-width: 100px;
+        max-height: 100px;
     }
 
     .img-input-label {
