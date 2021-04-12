@@ -43,9 +43,20 @@
             };
         },
         methods: {
-            handleSelectUserType(type) {
-                this.userType = type;
-                document.title = `client-${type}`;
+            async handleSelectUserType(type) {
+                if (await this.dioGetConnectAble(type)) {
+                    this.userType = type;
+                    document.title = `client-${type}`;
+                } else {
+                    alert('当前用户类型已被使用');
+                }
+            },
+            dioGetConnectAble(type) {
+                return this.axios.get('/is-connect-able', {
+                    params: {userType: type},
+                }).then(res => {
+                    return res?.data?.data;
+                });
             },
         },
     };

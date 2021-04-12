@@ -11,6 +11,7 @@ const fakeAiRespond = require('./src/fakeAiRespond.js');
 const findPortEnable = require('./src/findPortEnable.js');
 const socketWithCache = require('./src/socketWithCache.js').socketWithCache;
 const cacheList = require('./src/socketWithCache.js').cacheList;
+const clientUser = require('./src/clientUser.js');
 
 // 暴露静态文件夹
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -45,7 +46,13 @@ app.post('/upload-file', (req, res, next) => {
     });
 });
 
+app.get('/is-connect-able', (req, res) => {
+    res.json({status: 'success', data: clientUser.isConnectAble(req.query.userType)});
+});
+
 io.on('connection', (socket) => {
+    clientUser.logInOut(true, socket.handshake.query.userType);
+
     console.log('user connected');
 
     // 发送缓存信息
@@ -105,6 +112,8 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
+        clientUser.logInOut(false, socket.handshake.query.userType);
+
         console.log('user disconnected');
 
         socketWithCache(

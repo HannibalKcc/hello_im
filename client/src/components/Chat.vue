@@ -111,23 +111,26 @@
         },
         mounted() {
             this.initFixPaddingBottom();
-
-            this.socket = io('/', {
-                query: {
-                    userType: this.userType,
-                },
-            });
-            this.socket.on('msgFromS', (msgObj) => {
-                this.msgList.push(msgObj);
-                this.$nextTick(() => {
-                    window.scrollTo(0, this.$refs.chat.scrollHeight);
-                });
-            });
+            this.initSocket();
         },
         beforeDestroy() {
             this.socket.disconnect();
         },
         methods: {
+            initSocket() {
+                this.socket = io('/', {
+                    query: {
+                        userType: this.userType,
+                    },
+                });
+                this.socket.on('msgFromS', (msgObj) => {
+                    this.msgList.push(msgObj);
+                    this.$nextTick(() => {
+                        window.scrollTo(0, this.$refs.chat.scrollHeight);
+                    });
+                });
+            },
+
             handleSubmit() {
                 if (![null, undefined, ''].includes(this.sendMsg)) {
                     this.socket.emit('msgFromC', {
