@@ -30,7 +30,9 @@
 - [x] 服务端启动时，端口可用性检查
 - [x] 删除依赖，按照 MD 的启动方式运行正常
 - [x] 服务端消息缓存，下发
-- [ ] 服务端使用 TS
+- [x] 服务端使用 TS
 - [ ] 服务端使用 class 生成 msgObj
 - [x] 防XSS，目前客户端没有使用 v-html 的地方，暂时不启用
 - [x] 唯一客户、唯一客服
+- [ ] https://webpack.js.org/guides/development/#using-webpack-dev-middleware 考虑让开发环境下，客户端服务端同时热更新
+- [ ] msg option 允许进一步智能回复
